@@ -1,6 +1,8 @@
 import sqlite3
 from flask import current_app, g
 from flask.cli import with_appcontext
+import click
+import os
 
 def get_db():
     if 'db' not in g:
@@ -16,17 +18,22 @@ def close_db(e=None):
     if db is not None:
         db.close()
 
-def create_custom_table(filepath):
+def init_db():
     db = get_db()
-    cursor = db.cursor()
+    with current_app.open_resource('schema.sql') as f:
+        db.executescript(f.read().decode('utf8'))
 
-    with open(filepath, 'r') as file:
-        sql_commands = file.read()
-
-    cursor.executescript(sql_commands)
-    db.commit()
-    cursor.close()
+@click.command('init-db')
+@with_appcontext
+def init_db_command():
+    init_db()
+    click.echo('Initialized the database.')
 
 def init_app(app):
     app.teardown_appcontext(close_db)
+    app.cli.add_command(init_db_command)
 
+def check_and_create_db(app):
+    if not os.path.exists(app.config['DATABASE']):
+        os.makedirs(os.path.dirname(app.config['DATABASE']), exist_ok=True)
+        init_db()

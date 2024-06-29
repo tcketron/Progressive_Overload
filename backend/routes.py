@@ -1,34 +1,23 @@
-from flask import Blueprint, request, jsonify, current_app, g
-from werkzeug.utils import secure_filename
-import os
-from .db import get_db, close_db, create_custom_table
+from flask import Blueprint, jsonify, send_from_directory
+from .db import get_db
 
 bp = Blueprint('routes', __name__)
 
-UPLOAD_FOLDER = 'uploads'  # Define upload folder
+# This is the path for our main svelte page
+@bp.route('/')
+def base():
+    return send_from_directory('../frontend/public', 'index.html')
 
-@bp.route('/upload-table', methods=['POST'])
-def upload_table():
-    if 'file' not in request.files:
-        return jsonify(message="No file part"), 400
-    
-    file = request.files['file']
+# Path for the static files (Compiled JS/CSS, etc.)
+@bp.route("/<path:path>")
+def home(path):
+    return send_from_directory('../frontend/public', path)
 
-    if file.filename == '':
-        return jsonify(message="No selected file"), 400
-    
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(current_app.instance_path, UPLOAD_FOLDER, filename)
-        file.save(filepath)
-        
-        # Initialize or create table based on file contents
-        create_custom_table(filepath)
-        
-        return jsonify(message="File uploaded and table created successfully"), 200
-    
-    return jsonify(message="Invalid file type"), 400
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'db', 'sqlite', 'sqlite3'}
-
+# This path is for the /api/data (currently legs)
+@bp.route('/api/data', methods=['GET'])
+def get_data():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM legs')
+    data = cursor.fetchall()
+    return jsonify([dict(row) for row in data]) # Can also just do data
