@@ -1,23 +1,21 @@
 import os
-from flask import Flask
-from . import db
-from . import routes
+from flask import Flask, send_from_directory
+from . import db, routes
 
 def create_app():
     app = Flask(__name__)
 
-    # Configuration settings
-    app.config.from_mapping(
-        SECRET_KEY='bruhlmao',
-        DATABASE=os.path.join('/home/torment/development/database.db'), # List the path for the database
-        USE_API=False # This flag controls the usage of the API, which is currently false since we want to use a local database
-    )
+    app.config['DATABASE'] = '../database.db'
+
+    # Register your main routes
+    from .routes import bp as blueprint
+    app.register_blueprint(blueprint)
 
     # Initialize database commands
     db.init_app(app)
 
-    # Register routes
-    from . import routes
-    app.register_blueprint(routes.bp)
+    # Check and create database if it doesn't exist
+    with app.app_context():
+        db.check_and_create_db(app)
 
     return app
