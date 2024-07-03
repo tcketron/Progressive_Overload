@@ -1,4 +1,5 @@
-from flask import Blueprint, jsonify, send_from_directory
+from flask import Blueprint, jsonify, send_from_directory, request
+from flask_cors import CORS
 from .db import get_db
 
 bp = Blueprint('routes', __name__)
@@ -13,11 +14,23 @@ def base():
 def home(path):
     return send_from_directory('../frontend/public', path)
 
-# This path is for the /api/data (currently legs)
-@bp.route('/api/data', methods=['GET'])
-def get_data():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM legs')
-    data = cursor.fetchall()
-    return jsonify([dict(row) for row in data]) # Can also just do data
+DATABASE = '../database.db'
+
+@bp.route('/api/<table>', methods=['GET'])
+def get_data(table):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(f'SELECT * FROM {table}')
+    rows = cur.fetchall()
+    return jsonify([dict(row) for row in rows])
+
+@bp.route('/api/<table>', methods=['POST'])
+def add_row(table):
+    data = request.get_json()
+    db = get_db()
+    columns = ', '.join(data.keys())
+    placeholders = ', '.join('?' * len(data))
+    query = f'INSERT INTO {table} ({columns}) VALUES ({placeholders})'
+    db.execute(query, list(data.values()))
+    db.commit()
+    return jsonify({'status': 'success'}), 201
