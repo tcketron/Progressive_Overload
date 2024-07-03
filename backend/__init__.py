@@ -1,21 +1,17 @@
-import os
-from flask import Flask, send_from_directory
-from . import db, routes
+from flask import Flask
+from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
-
-    app.config['DATABASE'] = '../database.db'
-
-    # Register your main routes
-    from .routes import bp as blueprint
-    app.register_blueprint(blueprint)
-
-    # Initialize database commands
-    db.init_app(app)
-
-    # Check and create database if it doesn't exist
+    CORS(app)  # Enable CORS for all routes
+    
+    app.config['DATABASE'] = '../database.db'  # Update the path accordingly
+    
     with app.app_context():
-        db.check_and_create_db(app)
-
+        from . import db
+        db.init_app(app)
+    
+    from . import routes
+    app.register_blueprint(routes.bp)
+    
     return app
