@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify, send_from_directory, request
-from flask_cors import CORS
 from .db import get_db
 
 bp = Blueprint('routes', __name__)
