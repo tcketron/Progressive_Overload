@@ -1,0 +1,10 @@
+<nav>
+    <ul>
+        <li>
+            <a href="/">Home</a>
+        </li>
+        <li>
+            <a href="/data">Data</a>
+        </li>
+    </ul>
+</nav>
